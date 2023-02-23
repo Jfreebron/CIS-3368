@@ -1,62 +1,41 @@
-import mysql.connector
-from flask import Flask, jsonify, request
+import flask
+from flask import jsonify, request
+import creds
+from sql import create_connection, execute_read_query
 
-# Define your server credentials
-host = 'cis3368.cf87g2futrik.us-east-2.rds.amazonaws.com'
-user = 'admin'
-password = 'James123'
-database = 'CIS3368'
+connection = create_connection(creds.host, creds.user, creds.password, creds.database)
+print('Success')
+app = flask.Flask(__name__)
+app.config["DEBUG"] = True # allow to show errors in browser
 
-# Create a connection to the database
-cnx = mysql.connector.connect(user=user, password=password, host=host, database=database)
+@app.route('/', methods=['GET'])
+def home():
+    return "<h1> WELCOME TO OUR FIRST API! </h1>"
 
-app = Flask(__name__)
-
-# Define your API routes
-@app.route('/')
-def hello_world():
-    return 'Hello, World!'
-
-# GET all snowboard entries
-@app.route('/snowboard', methods=['GET'])
+@app.route('/api/snowboard/all', methods=['GET'])
 def get_snowboard():
-    cursor = cnx.cursor()
-    query = "SELECT * FROM snowboard"
-    cursor.execute(query)
-    rows = cursor.fetchall()
-    cursor.close()
+    select_query = "SELECT ID, Boardtype, Brand, Msrp, Size FROM snowboard"
+    rows = execute_read_query(connection, select_query)
     return jsonify(rows)
 
-# POST to insert a new row
-@app.route('/snowboard', methods=['POST'])
+@app.route('/api/snowboard', methods=['POST'])
 def add_snowboard():
-    cursor = cnx.cursor()
     data = request.get_json()
-    query = f"INSERT INTO snowboard (name, brand, price) VALUES ('{data['name']}', '{data['brand']}', {data['price']})"
-    cursor.execute(query)
-    cnx.commit()
-    cursor.close()
+    insert_query = f"INSERT INTO snowboard (ID, Boardtype, Brand, Msrp, Size) VALUES ({data['ID']}, '{data['Boardtype']}', '{data['Brand']}', {data['Msrp']}, '{data['Size']}')"
+    execute_read_query(connection, insert_query)
     return 'New row added to snowboard table.'
 
-# PUT to update a row
-@app.route('/snowboard/<int:id>', methods=['PUT'])
+@app.route('/api/snowboard/<int:id>', methods=['PUT'])
 def update_snowboard(id):
-    cursor = cnx.cursor()
     data = request.get_json()
-    query = f"UPDATE snowboard SET name='{data['name']}', brand='{data['brand']}', price={data['price']} WHERE id={id}"
-    cursor.execute(query)
-    cnx.commit()
-    cursor.close()
+    update_query = f"UPDATE snowboard SET Boardtype='{data['Boardtype']}', Brand='{data['Brand']}', Msrp={data['Msrp']}, Size='{data['Size']}' WHERE ID={id}"
+    execute_read_query(connection, update_query)
     return 'Row updated in snowboard table.'
 
-# DELETE to delete a row
-@app.route('/snowboard/<int:id>', methods=['DELETE'])
+@app.route('/api/snowboard/<int:id>', methods=['DELETE'])
 def delete_snowboard(id):
-    cursor = cnx.cursor()
-    query = f"DELETE FROM snowboard WHERE id={id}"
-    cursor.execute(query)
-    cnx.commit()
-    cursor.close()
+    delete_query = f"DELETE FROM snowboard WHERE ID={id}"
+    execute_read_query(connection, delete_query)
     return 'Row deleted from snowboard table.'
 
 if __name__ == '__main__':
