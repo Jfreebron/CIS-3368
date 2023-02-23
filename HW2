@@ -1,0 +1,63 @@
+import mysql.connector
+from flask import Flask, jsonify, request
+
+# Define your server credentials
+host = 'cis3368.cf87g2futrik.us-east-2.rds.amazonaws.com'
+user = 'admin'
+password = 'James123'
+database = 'CIS3368'
+
+# Create a connection to the database
+cnx = mysql.connector.connect(user=user, password=password, host=host, database=database)
+
+app = Flask(__name__)
+
+# Define your API routes
+@app.route('/')
+def hello_world():
+    return 'Hello, World!'
+
+# GET all snowboard entries
+@app.route('/snowboard', methods=['GET'])
+def get_snowboard():
+    cursor = cnx.cursor()
+    query = "SELECT * FROM snowboard"
+    cursor.execute(query)
+    rows = cursor.fetchall()
+    cursor.close()
+    return jsonify(rows)
+
+# POST to insert a new row
+@app.route('/snowboard', methods=['POST'])
+def add_snowboard():
+    cursor = cnx.cursor()
+    data = request.get_json()
+    query = f"INSERT INTO snowboard (name, brand, price) VALUES ('{data['name']}', '{data['brand']}', {data['price']})"
+    cursor.execute(query)
+    cnx.commit()
+    cursor.close()
+    return 'New row added to snowboard table.'
+
+# PUT to update a row
+@app.route('/snowboard/<int:id>', methods=['PUT'])
+def update_snowboard(id):
+    cursor = cnx.cursor()
+    data = request.get_json()
+    query = f"UPDATE snowboard SET name='{data['name']}', brand='{data['brand']}', price={data['price']} WHERE id={id}"
+    cursor.execute(query)
+    cnx.commit()
+    cursor.close()
+    return 'Row updated in snowboard table.'
+
+# DELETE to delete a row
+@app.route('/snowboard/<int:id>', methods=['DELETE'])
+def delete_snowboard(id):
+    cursor = cnx.cursor()
+    query = f"DELETE FROM snowboard WHERE id={id}"
+    cursor.execute(query)
+    cnx.commit()
+    cursor.close()
+    return 'Row deleted from snowboard table.'
+
+if __name__ == '__main__':
+    app.run()
